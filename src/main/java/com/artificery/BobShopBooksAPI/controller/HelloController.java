@@ -1,7 +1,7 @@
 package com.artificery.BobShopBooksAPI.controller;
 
-import com.artificery.BobShopBooksAPI.model.BobStoreBookInfo;
-import com.artificery.BobShopBooksAPI.service.NamePendingService;
+import com.artificery.BobShopBooksAPI.model.google.VolumeInfo;
+import com.artificery.BobShopBooksAPI.service.ScrapperService;
 import com.opencsv.exceptions.CsvValidationException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,10 +17,15 @@ import java.util.List;
 @RequiredArgsConstructor
 public class HelloController {
 
-    private final NamePendingService namePendingService;
+    private final ScrapperService scrapperService;
 
-    @GetMapping("/{sellerId}")
-    public List<BobStoreBookInfo> openBrowser(@PathVariable String sellerId) throws IOException, CsvValidationException {
-        return namePendingService.getSellerBookList(sellerId);
+    @GetMapping("/{sellerId}/books/to/read/compare")
+    public List<VolumeInfo> openBrowser(@PathVariable String sellerId) throws IOException, CsvValidationException {
+        return scrapperService.compareSellerBooksToMyToReadList(sellerId);
+    }
+
+    @GetMapping("/{sellerId}/books/info")
+    public List<VolumeInfo> getSellerBooksInfo(@PathVariable String sellerId) {
+        return scrapperService.getBookDetailsFromSeller(sellerId);
     }
 }

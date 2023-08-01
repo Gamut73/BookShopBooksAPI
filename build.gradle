@@ -30,6 +30,9 @@ dependencies {
 	//working with CSV files
 	implementation 'com.opencsv:opencsv:5.5.2'
 
+	//rest client
+	implementation 'org.springframework.boot:spring-boot-starter-webflux:2.6.4'
+
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
 
