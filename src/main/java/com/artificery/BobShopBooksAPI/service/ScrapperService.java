@@ -11,10 +11,14 @@ import org.openqa.selenium.*;
 import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
+import java.time.Duration;
+import java.time.temporal.TemporalUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -38,9 +42,10 @@ public class ScrapperService {
         List<VolumeInfo>  bookInfo = new ArrayList<>();
 
         for (BobStoreBookInfo bookTitle : bookTitles) {
-            bookInfoService.searchForBook(bookTitle.getListingTitle())
-                    .getItems()
+            Optional.ofNullable(bookInfoService.searchForBook(bookTitle.getListingTitle()))
+                    .map(VolumeSearchResponse::getItems)
                     .stream()
+                    .flatMap(Collection::stream)
                     .map(Volume::getVolumeInfo)
                     .peek(this::addLinksForStoryGraphAndGoodreads)
                     .findFirst()
@@ -70,8 +75,9 @@ public class ScrapperService {
                             .append(identifier.getIdentifier())
                             .toString();
                     volumeInfo.setGoodReadsPreviewLink(url);
-                    volumeInfo.setStorygraphSearchLink("https://app.thestorygraph.com/browse?search_term=" + volumeInfo.getTitle().replace(" ", "+"));
                 });
+        Optional.ofNullable(volumeInfo.getTitle())
+                        .ifPresent(title -> volumeInfo.setStorygraphSearchLink("https://app.thestorygraph.com/browse?search_term=" + title.replace(" ", "+")));
     }
 
     private List<VolumeInfo> getSellerBooksInfo(String sellerId) {
@@ -152,8 +158,15 @@ public class ScrapperService {
         webDriver = getChromeWebDriver();
         webDriver.get("https://www.bobshop.co.za/seller/" + sellerId);
 
+
+        String bookCategoryXPath = "//li[@class='filter-list-item']/a[contains(@onclick, \"BobeTradelist.setInputAndSubmit('CategoryId',105);\")]";
         WebElement booksAndEducationLink = webDriver.findElement(By.partialLinkText("Books"));
-        booksAndEducationLink.click();
+//        new WebDriverWait(webDriver, Duration.ofMinutes(2)).until(ExpectedConditions.elementToBeClickable(By.xpath(bookCategoryXPath)));
+//
+//        booksAndEducationLink.click();
+
+        JavascriptExecutor js = (JavascriptExecutor)webDriver;
+        js.executeScript("arguments[0].click()", booksAndEducationLink);
 
         WebElement nextButton;
 
