@@ -1,64 +1,46 @@
 package com.artificery.BobShopBooksAPI.service;
 
-
+import com.artificery.BobShopBooksAPI.BookInfoRestClient;
+import com.artificery.BobShopBooksAPI.model.google.Volume;
+import com.artificery.BobShopBooksAPI.model.google.VolumeInfo;
 import com.artificery.BobShopBooksAPI.model.google.VolumeSearchResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class BookInfoService {
 
-    WebClient webClient;
+    private final BookInfoRestClient bookInfoRestClient;
 
-    BookInfoService() {
-        webClient = getWebClient();
+    public VolumeInfo getBookInformation(String bookTitle) {
+        return Optional.of(bookInfoRestClient.searchForBook(bookTitle))
+                .map(VolumeSearchResponse::getItems)
+                .stream()
+                .flatMap(Collection::stream)
+                .map(Volume::getVolumeInfo)
+                .peek(this::addLinksForStoryGraphAndGoodreads)
+                .findFirst()
+                .orElse(null);
     }
 
-    private final String VOLUME_INFO_FIELDS = "(title,subtitle,authors,publishedDate,description,industryIdentifiers,averageRating,categories,pageCount,ratingsCount,language)";
-    private final String SEARCH_FIELDS = "items(id,volumeInfo" + VOLUME_INFO_FIELDS + ")";
-
-    public VolumeSearchResponse searchForBook(String title) {
-        return webClient.get()
-                .uri(uriBuilder -> uriBuilder
-                        .path("/volumes")
-                        .queryParam("q", title)
-                        .queryParam("maxResults", 1)
-                        .queryParam("fields", SEARCH_FIELDS)
-                        .build())
-                .retrieve()
-                .bodyToMono(VolumeSearchResponse.class)
-                .block();
-    }
-
-    public List<VolumeSearchResponse> searchForBooks(List<String> titles) {
-        List<Mono<VolumeSearchResponse>> responses = new ArrayList<>();
-
-        titles.forEach(title -> responses.add(
-                webClient.get().uri("/volumes?q=" + title)
-                        .retrieve()
-                        .bodyToMono(VolumeSearchResponse.class)
-        ));
-
-        return Flux.merge(responses).collectList().block();
-    }
-
-
-    public String getBookInfo(String isbn) {
-        return webClient.get()
-                .uri("/volumes?q=isbn:" + isbn)
-                .retrieve()
-                .bodyToMono(String.class)
-                .block();
-    }
-
-    private WebClient getWebClient() {
-        return WebClient.builder()
-                .baseUrl("https://www.googleapis.com/books/v1")
-                .build();
+    private void addLinksForStoryGraphAndGoodreads(VolumeInfo volumeInfo) {
+        Optional.ofNullable(volumeInfo.getIndustryIdentifiers())
+                .stream()
+                .flatMap(Collection::stream)
+                .filter(identifier -> identifier.getType().contains("ISBN_13"))
+                .findFirst()
+                .ifPresent(identifier -> {
+                    String url = new StringBuilder("https://www.goodreads.com/search?utf8=%E2%9C%93&query=")
+                            .append(identifier.getIdentifier())
+                            .toString();
+                    volumeInfo.setGoodReadsPreviewLink(url);
+                });
+        Optional.ofNullable(volumeInfo.getTitle())
+                .ifPresent(title -> volumeInfo.setStorygraphSearchLink("https://app.thestorygraph.com/browse?search_term=" + title.replace(" ", "+")));
     }
 }

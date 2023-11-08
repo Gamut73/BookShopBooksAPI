@@ -25,7 +25,7 @@ dependencies {
 	annotationProcessor 'org.projectlombok:lombok'
 
 	//Selenium
-	implementation 'org.seleniumhq.selenium:selenium-java:4.1.0'
+	implementation 'org.seleniumhq.selenium:selenium-java:4.11.0'
 
 	//working with CSV files
 	implementation 'com.opencsv:opencsv:5.5.2'
