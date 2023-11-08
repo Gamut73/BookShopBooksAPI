@@ -1,12 +1,10 @@
 package com.artificery.BobShopBooksAPI.controller;
 
+import com.artificery.BobShopBooksAPI.dto.BookSellerInfoRequestDTO;
 import com.artificery.BobShopBooksAPI.model.google.VolumeInfo;
 import com.artificery.BobShopBooksAPI.service.BOBBookShoppingService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -22,4 +20,8 @@ public class BobShopBookShoppingInfoController {
         return bookShoppingService.getBOBSellerBooksInfo(sellerId);
     }
 
+    @PostMapping("/{sellerId}/books/category/info")
+    public List<VolumeInfo> getSellerBooksInfoByCategory(@PathVariable String sellerId, @RequestBody BookSellerInfoRequestDTO requestDTO) {
+        return bookShoppingService.getBOBSellerBooksInfoByCategory(sellerId, requestDTO.getCategories());
+    }
 }

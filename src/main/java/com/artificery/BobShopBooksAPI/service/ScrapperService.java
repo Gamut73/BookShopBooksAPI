@@ -19,6 +19,26 @@ public class ScrapperService {
         System.setProperty("webdriver.chrome.driver", "src/main/resources/chromedriver_win32/chromedriver.exe");
     }
 
+    public List<BobStoreBookInfo> scrapBookTitlesFromSellerByCategory(String sellerId, List<String> categories) {
+        List<BobStoreBookInfo> bookTitles = new ArrayList<>();
+
+        ChromeOptions chromeOptions = new ChromeOptions();
+        chromeOptions.setHeadless(true);
+
+        webDriver = getChromeWebDriver();
+        webDriver.get("https://www.bobshop.co.za/seller/" + sellerId);
+
+        goToSellersBooks(webDriver);
+
+        getIntoCategories(webDriver, categories);
+
+        bookTitles = scrapPages();
+
+        webDriver.quit();
+
+        return bookTitles;
+    }
+
     public List<BobStoreBookInfo> scrapBookTitlesFromSeller(String sellerId) {
         List<BobStoreBookInfo> bookTitles = new ArrayList<>();
 
@@ -28,18 +48,31 @@ public class ScrapperService {
         webDriver = getChromeWebDriver();
         webDriver.get("https://www.bobshop.co.za/seller/" + sellerId);
 
-
-        String bookCategoryXPath = "//li[@class='filter-list-item']/a[contains(@onclick, \"BobeTradelist.setInputAndSubmit('CategoryId',105);\")]";
-        WebElement booksAndEducationLink = webDriver.findElement(By.partialLinkText("Books"));
-
-        JavascriptExecutor js = (JavascriptExecutor)webDriver;
-        js.executeScript("arguments[0].click()", booksAndEducationLink);
+        goToSellersBooks(webDriver);
 
         bookTitles = scrapPages();
 
         webDriver.quit();
 
         return bookTitles;
+    }
+
+    private void getIntoCategories(WebDriver webDriver, List<String> categories) {
+
+        categories.stream()
+                .forEach(category -> {
+                    WebElement categoryLink = webDriver.findElement(By.partialLinkText(category));
+
+                    JavascriptExecutor js = (JavascriptExecutor) webDriver;
+                    js.executeScript("arguments[0].click()", categoryLink);
+                });
+    }
+
+    private void goToSellersBooks(WebDriver webDriver) {
+        WebElement booksAndEducationLink = webDriver.findElement(By.partialLinkText("Books"));
+
+        JavascriptExecutor js = (JavascriptExecutor) webDriver;
+        js.executeScript("arguments[0].click()", booksAndEducationLink);
     }
 
     private List<BobStoreBookInfo> scrapPages() {
