@@ -175,6 +175,11 @@ public class ScrapperService {
 
         WebElement currCategory = webDriver.findElement(By.xpath(String.format("//span[@class='active' and text()='%s']", currentCategoryName)));
         String text1 = currCategory.getText();
+
+        if (text1.equalsIgnoreCase("Africana")) {
+            return new ArrayList<>();
+        }
+
         String tagName = currCategory.getTagName();
 
         WebElement parentListItem = webDriver.findElement(By.xpath(String.format("//span[@class='active' and text()='%s']/parent::*", currentCategoryName)));
