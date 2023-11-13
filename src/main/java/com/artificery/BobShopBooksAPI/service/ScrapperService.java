@@ -1,21 +1,31 @@
 package com.artificery.BobShopBooksAPI.service;
 
-import com.artificery.BobShopBooksAPI.BookInfoRestClient;
+import com.artificery.BobShopBooksAPI.CategoryService;
+import com.artificery.BobShopBooksAPI.entity.Category;
 import com.artificery.BobShopBooksAPI.model.BobStoreBookInfo;
+import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.support.locators.RelativeLocator;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
+import java.sql.Struct;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class ScrapperService {
 
+    private final CategoryService categoryService;
     private WebDriver webDriver;
 
-    ScrapperService(CSVService csvService, BookInfoRestClient bookInfoRestClient) {
+    ScrapperService(CategoryService categoryService) {
+        this.categoryService = categoryService;
         System.setProperty("webdriver.chrome.driver", "src/main/resources/chromedriver_win32/chromedriver.exe");
     }
 
@@ -32,7 +42,7 @@ public class ScrapperService {
 
         getIntoCategories(webDriver, categories);
 
-        bookTitles = scrapPages();
+//        bookTitles = scrapPages();
 
         webDriver.quit();
 
@@ -57,13 +67,25 @@ public class ScrapperService {
         return bookTitles;
     }
 
-    private void getIntoCategories(WebDriver webDriver, List<String> categories) {
+    @PostConstruct
+    public void initializeCategories() {
+        if (!categoryService.categoriesNotYetInitialized()) {
+            return;
+        }
 
+        Category rootCategory = categoryService.createCategory("Books & Education", 0L);
+
+        buildCategoriesHierarchy(rootCategory)
+                .stream()
+                .map(Category::getCategoryName)
+                .forEach(log::info);
+    }
+
+    private void getIntoCategories(WebDriver webDriver, List<String> categories) {
+        JavascriptExecutor js = (JavascriptExecutor) webDriver;
         categories.stream()
                 .forEach(category -> {
                     WebElement categoryLink = webDriver.findElement(By.partialLinkText(category));
-
-                    JavascriptExecutor js = (JavascriptExecutor) webDriver;
                     js.executeScript("arguments[0].click()", categoryLink);
                 });
     }
@@ -109,6 +131,100 @@ public class ScrapperService {
         } catch (NoSuchElementException e) {
             return null;
         }
+    }
+
+
+
+    public List<Category> buildCategoriesHierarchy(Category rootCategory) {
+        List<Category> categories;
+
+        ChromeOptions chromeOptions = new ChromeOptions();
+        chromeOptions.setHeadless(true);
+
+        webDriver = getChromeWebDriver();
+        webDriver.get("https://www.bobshop.co.za");
+
+        navigateToBooksPage(webDriver);
+        categories = addChildrenForCategory(webDriver, rootCategory, "AllCategories");
+
+        webDriver.quit();
+
+        return categories;
+    }
+
+    private List<Category> addChildrenForCategory(WebDriver webDriver, Category category, String parentCategoryName) {
+        List<Category> categories = Arrays.asList(category);
+
+        expandCategory(webDriver, category.getCategoryName());
+        List<String> childCategoryNames = getChildCategoryNames(webDriver, category.getCategoryName());
+
+        if (childCategoryNames.isEmpty()) {
+            expandCategory(webDriver, parentCategoryName);
+            return categories;
+        }
+
+        childCategoryNames.forEach(childCategoryName -> {
+            Category childCategory = categoryService.createCategory(childCategoryName, category.getParentCategoryId());
+            categories.addAll(addChildrenForCategory(webDriver, childCategory, parentCategoryName));
+        });
+
+        return categories;
+    }
+
+    private List<String> getChildCategoryNames(WebDriver webDriver, String currentCategoryName) {
+
+        WebElement currCategory = webDriver.findElement(By.xpath(String.format("//span[@class='active' and text()='%s']", currentCategoryName)));
+        String text1 = currCategory.getText();
+        String tagName = currCategory.getTagName();
+
+        WebElement parentListItem = webDriver.findElement(By.xpath(String.format("//span[@class='active' and text()='%s']/parent::*", currentCategoryName)));
+        String tagName2 = parentListItem.getTagName();
+        String text3 = parentListItem.getText();
+
+        WebElement ol;
+
+        try {
+            ol = parentListItem.findElements(By.xpath("*"))
+                    .stream()
+                    .peek(e -> {
+                        log.info("tag: {}, text: {}", e.getTagName(), e.getText());
+                    })
+                    .filter(webElement -> webElement.getTagName().equalsIgnoreCase("ol"))
+                    .findFirst()
+                    .orElseThrow(java.util.NoSuchElementException::new);
+        } catch (NoSuchElementException ex) {
+            return List.of();
+        }
+
+        String tagName1 = ol.getTagName();
+        String text2 = ol.getText();
+
+        List<WebElement> listItemElements = ol.findElements(By.xpath("*"));
+
+        List<String> collect = listItemElements
+                .stream()
+                .map(WebElement::getText)
+                .map(text -> text.split("\\(")[0])
+                .map(String::trim)
+                .collect(Collectors.toList());
+
+        return collect;
+    }
+
+    private void expandCategory(WebDriver webDriver, String categoryName) {
+        JavascriptExecutor js = (JavascriptExecutor) webDriver;
+
+        String parentXpath = String.format("//a[text()='%s']", categoryName);
+        WebElement element = webDriver.findElement(By.xpath(parentXpath));
+
+        js.executeScript("arguments[0].click()", element);
+    }
+
+    private void navigateToBooksPage(WebDriver webDriver) {
+        JavascriptExecutor js = (JavascriptExecutor) webDriver;
+
+        WebElement searchButton = webDriver.findElement(By.className("search-button"));
+        js.executeScript("arguments[0].click()", searchButton);
     }
 
     private WebDriver getChromeWebDriver() {
