@@ -7,4 +7,5 @@ import lombok.Data;
 @AllArgsConstructor
 public class BobStoreBookInfo {
     private String listingTitle;
+    private String bobShopItemPageLink;
 }

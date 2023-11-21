@@ -21,8 +21,6 @@ public class ScrapperService {
     }
 
     public List<BobStoreBookInfo> scrapBookTitlesFromSellerByCategory(String sellerId, List<String> categories) {
-        List<BobStoreBookInfo> bookTitles = new ArrayList<>();
-
         ChromeOptions chromeOptions = new ChromeOptions();
         chromeOptions.setHeadless(true);
 
@@ -33,7 +31,7 @@ public class ScrapperService {
 
         getIntoCategories(webDriver, categories);
 
-        bookTitles = scrapPages();
+        List<BobStoreBookInfo> bookTitles = scrapPages();
 
         webDriver.quit();
 
@@ -41,7 +39,6 @@ public class ScrapperService {
     }
 
     public List<BobStoreBookInfo> scrapBookTitlesFromSeller(String sellerId) {
-        List<BobStoreBookInfo> bookTitles = new ArrayList<>();
 
         ChromeOptions chromeOptions = new ChromeOptions();
         chromeOptions.setHeadless(true);
@@ -51,7 +48,7 @@ public class ScrapperService {
 
         goToSellersBooks(webDriver);
 
-        bookTitles = scrapPages();
+        List<BobStoreBookInfo> bookTitles = scrapPages();
 
         webDriver.quit();
 
@@ -81,9 +78,11 @@ public class ScrapperService {
 
         do {
             List<WebElement> elements = new ArrayList<>();
-            elements.addAll(webDriver.findElements(By.className("tradelist-item-title")));
+            elements.addAll(webDriver.findElements(By.className("tradelist-item-main-link")));
             elements.forEach(element -> {
-                bookTitles.add(new BobStoreBookInfo(element.getText()));
+                String bookItemPageLink = element.getAttribute("href");
+                String bookTitle = element.getAttribute("title");
+                bookTitles.add(new BobStoreBookInfo(bookTitle, bookItemPageLink));
             });
             nextButton = getNextButton();
             if (nextButton != null) {

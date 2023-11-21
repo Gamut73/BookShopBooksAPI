@@ -16,6 +16,4 @@ public class VolumeInfo{
 	private String publishedDate;
 	private List<String> categories;
 	private List<String> authors;
-	private String goodReadsPreviewLink;
-	private String storygraphSearchLink;
 }
