@@ -43,7 +43,7 @@ public class BOBBookShoppingService {
             VolumeInfo googleVolumeInfo = bookInfoService.getBookInformation(bobStoreBook.getListingTitle());
 
             BookInfoDto bookInfo = googleVolumeInfoMapper.mapVolumeInfoToBookInfo(googleVolumeInfo);
-            bookInfo.setBobShopItemPageLink(bobStoreBook.getBobShopItemPageLink());
+            Optional.ofNullable(bobStoreBook.getBobShopItemPageLink()).ifPresent(bookInfo::setBobShopItemPageLink);
             addLinksForStoryGraphAndGoodreads(googleVolumeInfo, bookInfo);
 
             bookInfoList.add(bookInfo);
