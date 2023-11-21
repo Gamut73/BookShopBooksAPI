@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -19,6 +20,7 @@ public class BOBBookShoppingService {
 
     public List<VolumeInfo> getBOBSellerBooksInfoByCategory(String sellerId, List<String> categories) {
 
+        scrapperService.scrapBookTitlesFromSellerByCategory(sellerId, categories);
         return scrapperService.scrapBookTitlesFromSellerByCategory(sellerId, categories)
                 .stream()
                 .map(BobStoreBookInfo::getListingTitle)
