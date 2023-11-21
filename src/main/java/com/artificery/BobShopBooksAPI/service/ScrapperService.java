@@ -1,31 +1,22 @@
 package com.artificery.BobShopBooksAPI.service;
 
-import com.artificery.BobShopBooksAPI.CategoryService;
-import com.artificery.BobShopBooksAPI.entity.Category;
 import com.artificery.BobShopBooksAPI.model.BobStoreBookInfo;
 import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
-import org.openqa.selenium.support.locators.RelativeLocator;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
-import java.sql.Struct;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 public class ScrapperService {
 
-    private final CategoryService categoryService;
     private WebDriver webDriver;
 
-    ScrapperService(CategoryService categoryService) {
-        this.categoryService = categoryService;
+    ScrapperService() {
         System.setProperty("webdriver.chrome.driver", "src/main/resources/chromedriver_win32/chromedriver.exe");
     }
 

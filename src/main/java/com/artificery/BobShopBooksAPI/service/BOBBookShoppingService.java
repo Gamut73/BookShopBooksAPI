@@ -20,7 +20,6 @@ public class BOBBookShoppingService {
 
     public List<VolumeInfo> getBOBSellerBooksInfoByCategory(String sellerId, List<String> categories) {
 
-        scrapperService.scrapBookTitlesFromSellerByCategory(sellerId, categories);
         return scrapperService.scrapBookTitlesFromSellerByCategory(sellerId, categories)
                 .stream()
                 .map(BobStoreBookInfo::getListingTitle)
