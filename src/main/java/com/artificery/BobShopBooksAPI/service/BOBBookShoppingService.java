@@ -21,14 +21,19 @@ public class BOBBookShoppingService {
     private final ScrapperService scrapperService;
     private final BookInfoService bookInfoService;
     private final GoogleVolumeInfoMapper googleVolumeInfoMapper;
+    private final SearchCacheService searchCacheService;
 
     public List<BookInfoDto> getBOBSellerBooksInfoByCategory(String sellerId, List<String> categories) {
+        List<BookInfoDto> bookInfoDtoList = searchScrappedBookTitles(scrapperService.scrapBookTitlesFromSellerByCategory(sellerId, categories));
+        searchCacheService.saveSearch(sellerId, categories.get(categories.size() - 1), bookInfoDtoList);
 
-        return searchScrappedBookTitles(scrapperService.scrapBookTitlesFromSellerByCategory(sellerId, categories));
+        return bookInfoDtoList;
     }
 
     public List<BookInfoDto> getBOBSellerBooksInfo(String sellerId) {
-        return searchScrappedBookTitles(scrapperService.scrapBookTitlesFromSeller(sellerId));
+        List<BookInfoDto> bookInfoDtoList = searchScrappedBookTitles(scrapperService.scrapBookTitlesFromSeller(sellerId));
+        searchCacheService.saveSearch(sellerId, "All", bookInfoDtoList);
+        return bookInfoDtoList;
     }
 
     private List<BookInfoDto> searchScrappedBookTitles(List<BobStoreBookInfo> bobStoreBookInfoList) {

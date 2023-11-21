@@ -37,3 +37,4 @@ out/
 .vscode/
 
 *.csv
+search_cache/
