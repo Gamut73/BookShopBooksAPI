@@ -1,13 +1,14 @@
 package com.artificery.BobShopBooksAPI.controller;
 
+import com.artificery.BobShopBooksAPI.dto.BookInfoFilterDto;
 import com.artificery.BobShopBooksAPI.service.SearchCacheService;
+import com.artificery.BobShopBooksAPI.utility.BookInfoFilterUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -16,9 +17,9 @@ public class SearchCacheController {
 
     private final SearchCacheService searchCacheService;
 
-    @GetMapping("{cacheFileName}")
-    public ResponseEntity<?> getCacheFile(@PathVariable String cacheFileName) {
-        return new ResponseEntity<>(searchCacheService.retrieveCachedSearch(cacheFileName), HttpStatus.OK);
+    @PostMapping("{cacheFileName}")
+    public ResponseEntity<?> getCacheFile(@PathVariable String cacheFileName, @RequestBody List<BookInfoFilterDto> filters) {
+        return new ResponseEntity<>(searchCacheService.retrieveCachedSearchAndFilter(cacheFileName, filters), HttpStatus.OK);
     }
 
     @GetMapping("list")

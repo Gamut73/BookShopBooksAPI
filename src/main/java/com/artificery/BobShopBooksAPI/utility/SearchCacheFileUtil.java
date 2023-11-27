@@ -1,4 +1,4 @@
-package com.artificery.BobShopBooksAPI;
+package com.artificery.BobShopBooksAPI.utility;
 
 import lombok.extern.slf4j.Slf4j;
 

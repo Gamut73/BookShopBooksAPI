@@ -8,10 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -42,11 +39,18 @@ public class BOBBookShoppingService {
         for (BobStoreBookInfo bobStoreBook : bobStoreBookInfoList) {
             VolumeInfo googleVolumeInfo = bookInfoService.getBookInformation(bobStoreBook.getListingTitle());
 
-            BookInfoDto bookInfo = googleVolumeInfoMapper.mapVolumeInfoToBookInfo(googleVolumeInfo);
-            Optional.ofNullable(bobStoreBook.getBobShopItemPageLink()).ifPresent(bookInfo::setBobShopItemPageLink);
-            addLinksForStoryGraphAndGoodreads(googleVolumeInfo, bookInfo);
+            Optional<BookInfoDto> bookInfoOptional = Optional.ofNullable(googleVolumeInfoMapper.mapVolumeInfoToBookInfo(googleVolumeInfo));
 
-            bookInfoList.add(bookInfo);
+            if (bookInfoOptional.isPresent()) {
+                BookInfoDto bookInfo = bookInfoOptional.get();
+                Optional.ofNullable(bobStoreBook.getBobShopItemPageLink()).ifPresent(bookInfo::setBobShopItemPageLink);
+                addLinksForStoryGraphAndGoodreads(googleVolumeInfo, bookInfo);
+
+                bookInfoList.add(bookInfo);
+            } else {
+                log.error("BookInfo was null: \n BobStoreBookInfo: {} \n VolumeInfo: {}", bobStoreBook, googleVolumeInfo);
+            }
+
         }
 
         return bookInfoList;
@@ -66,5 +70,18 @@ public class BOBBookShoppingService {
                 });
         Optional.ofNullable(volumeInfo.getTitle())
                 .ifPresent(title -> bookInfoDto.setStorygraphSearchLink("https://app.thestorygraph.com/browse?search_term=" + title.replace(" ", "+")));
+
+        Optional.ofNullable(volumeInfo.getAuthors())
+                .stream()
+                .flatMap(Collection::stream)
+                .filter(Objects::nonNull)
+                .findFirst()
+                .ifPresent(author -> {
+                    String authorAppendage = author.replace(" ", "+");
+                    String currentSearchUrl = bookInfoDto.getStorygraphSearchLink();
+                    if ( currentSearchUrl != null) {
+                        bookInfoDto.setStorygraphSearchLink(currentSearchUrl + authorAppendage);
+                    }
+                });
     }
 }

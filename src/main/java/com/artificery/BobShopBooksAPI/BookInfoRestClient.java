@@ -6,7 +6,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.util.retry.Retry;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,6 +34,7 @@ public class BookInfoRestClient {
                         .build())
                 .retrieve()
                 .bodyToMono(VolumeSearchResponse.class)
+                .retryWhen(Retry.backoff(3, Duration.ofSeconds(5)))
                 .block();
     }
 
@@ -46,7 +49,6 @@ public class BookInfoRestClient {
 
         return Flux.merge(responses).collectList().block();
     }
-
 
     public String getBookInfo(String isbn) {
         return webClient.get()

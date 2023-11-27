@@ -1,7 +1,9 @@
 package com.artificery.BobShopBooksAPI.service;
 
-import com.artificery.BobShopBooksAPI.SearchCacheFileUtil;
+import com.artificery.BobShopBooksAPI.utility.BookInfoFilterUtil;
+import com.artificery.BobShopBooksAPI.utility.SearchCacheFileUtil;
 import com.artificery.BobShopBooksAPI.dto.BookInfoDto;
+import com.artificery.BobShopBooksAPI.dto.BookInfoFilterDto;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -16,6 +18,15 @@ import java.util.List;
 public class SearchCacheService {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    public List<BookInfoDto> retrieveCachedSearchAndFilter(String cachedSearchFileName, List<BookInfoFilterDto> filters) {
+        String searchResultsAsString = SearchCacheFileUtil.readFileFromSearchCache(cachedSearchFileName);
+
+        List<BookInfoDto> bookInfoDtoList = convertJsonToBookInfoDtoList(searchResultsAsString);
+
+
+        return BookInfoFilterUtil.applyFiltersOnBookList(bookInfoDtoList, filters);
+    }
 
     public List<BookInfoDto> retrieveCachedSearch(String cachedSearchFileName) {
         String searchResultsAsString = SearchCacheFileUtil.readFileFromSearchCache(cachedSearchFileName);
