@@ -2,13 +2,24 @@ package com.artificery.BobShopBooksAPI.utility;
 
 import com.artificery.BobShopBooksAPI.dto.BookInfoDto;
 import com.artificery.BobShopBooksAPI.dto.BookInfoFilterDto;
+import com.artificery.BobShopBooksAPI.enums.FilterField;
+import com.artificery.BobShopBooksAPI.enums.FilterOperator;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.expression.EvaluationContext;
+import org.springframework.expression.Expression;
+import org.springframework.expression.ExpressionParser;
+import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.expression.spel.support.StandardEvaluationContext;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Slf4j
 public class BookInfoFilterUtil {
+
+    private static final ExpressionParser expressionParser = new SpelExpressionParser();
 
     private BookInfoFilterUtil() {
 
@@ -18,102 +29,56 @@ public class BookInfoFilterUtil {
         List<BookInfoDto> filteredBookInfos = bookInfoDtos;
 
         for (BookInfoFilterDto filter: filters) {
-            filteredBookInfos = applyFilter(filteredBookInfos, filter);
+            filteredBookInfos = applyFilterGeneric(filteredBookInfos, filter);
         }
 
         return filteredBookInfos;
     }
 
-    private static List<BookInfoDto> applyFilter(List<BookInfoDto> bookInfoDtos, BookInfoFilterDto filter) {
-        switch (filter.getFieldName()) {
-            case RATING:
-                return filterByRatings(bookInfoDtos, filter);
-            case RATINGS_COUNT:
-                return filterByRatingsCount(bookInfoDtos, filter);
-            case AUTHOR:
-                return filterByAuthor(bookInfoDtos, filter);
-            case CATEGORIES:
-                return filterByCategories(bookInfoDtos, filter);
-            default:
-                return bookInfoDtos;
-        }
+    private static List<BookInfoDto> applyFilterGeneric(List<BookInfoDto> bookInfos, BookInfoFilterDto filter) {
+        return bookInfos
+                .stream()
+                .filter(bookInfo -> evaluateFilter(bookInfo, filter)).collect(Collectors.toList());
     }
 
-    private static List<BookInfoDto> filterByCategories(List<BookInfoDto> bookInfoDtos, BookInfoFilterDto filter) {
-        switch (filter.getFilterType()) {
-            case CONTAINS:
-                return bookInfoDtos
-                        .stream()
-                        .filter(bookInfo -> bookInfo.getCategories() != null && !bookInfo.getCategories().isEmpty() && bookInfo.getCategories().stream().anyMatch(category -> category.toLowerCase().contains(filter.getValue().toLowerCase())))
-                        .collect(Collectors.toList());
-            case NOT_CONTAINS:
-                return bookInfoDtos
-                        .stream()
-                        .filter(bookInfo ->  {
-                            if (bookInfo.getCategories() != null && !bookInfo.getCategories().isEmpty()) {
-                                return !bookInfo.getCategories().stream().anyMatch(category -> category.equalsIgnoreCase(filter.getValue()));
-                            }
-                            return true;
-                        })
-                        .collect(Collectors.toList());
-            default:
-                log.warn("The scenario for the following filter hasn't been handled yet: {}", filter);
-                return bookInfoDtos;
-        }
+    private static Boolean evaluateFilter(BookInfoDto bookInfo, BookInfoFilterDto filter) {
+        Expression expression = expressionParser.parseExpression(getFieldNameFromFilterField(filter.getName()));
+
+        EvaluationContext context = new StandardEvaluationContext(bookInfo);
+        String fieldValue = (String) expression.getValue(context);
+
+        Expression evaluationExpression = expressionParser.parseExpression(fieldValue + getOperator(filter.getOperator()) + filter.getValue());
+        return  (Boolean) evaluationExpression.getValue();
     }
 
-    private static List<BookInfoDto> filterByAuthor(List<BookInfoDto> bookInfoDtos, BookInfoFilterDto filter) {
-        switch (filter.getFilterType()) {
-            case CONTAINS:
-                return bookInfoDtos
-                        .stream()
-                        .filter(bookInfo -> bookInfo.getAuthors() != null && !bookInfo.getAuthors().isEmpty() && bookInfo.getAuthors().stream().anyMatch(author -> author.toLowerCase().contains(filter.getValue().toLowerCase())))
-                        .collect(Collectors.toList());
-            case NOT_CONTAINS:
-                return bookInfoDtos
-                        .stream()
-                        .filter(bookInfo ->  {
-                            if (bookInfo.getAuthors() != null && !bookInfo.getAuthors().isEmpty()) {
-                                return !bookInfo.getAuthors().stream().anyMatch(author -> author.equalsIgnoreCase(filter.getValue()));
-                            }
-                            return true;
-                        })
-                        .collect(Collectors.toList());
-            default:
-                log.warn("The scenario for the following filter hasn't been handled yet: {}", filter);
-                return bookInfoDtos;
+    private static String getFieldNameFromFilterField(FilterField filterField) {
+        List<String> subWords = new ArrayList<>(Arrays.asList(filterField.toString().toLowerCase().split("_")));
+        StringBuilder fieldName = new StringBuilder(subWords.get(0));
+        subWords.remove(0);
+
+        for (String word: subWords) {
+            fieldName.append(word.replace(word.charAt(0), Character.toUpperCase(word.charAt(0))));
         }
+
+        return fieldName.toString();
     }
 
-    private static List<BookInfoDto> filterByRatings(List<BookInfoDto> bookInfoDtos, BookInfoFilterDto filter) {
-        switch (filter.getFilterType()) {
+    private static String getOperator(FilterOperator filterOperator) {
+        switch (filterOperator) {
+            case EQUAL:
+                return "==";
+            case NOT_EQUAL:
+                return "!=";
+            case GREATER_THAN:
+                return ">";
+            case SMALLER_THAN:
+                return "<";
             case GREATER_OR_EQUAL_TO:
-                return bookInfoDtos
-                        .stream()
-                        .filter(bookInfo -> bookInfo.getAverageRating() != null && Double.valueOf(bookInfo.getAverageRating()) >= Double.valueOf(filter.getValue()))
-                        .collect(Collectors.toList());
-
-            case IS_NOT_NULL:
-                return bookInfoDtos
-                        .stream()
-                        .filter(bookInfo -> bookInfo.getAverageRating() != null)
-                        .collect(Collectors.toList());
+                return ">=";
+            case SMALLER_OR_EQUAL_TO:
+                return "<=";
             default:
-               log.warn("The scenario for the following filter hasn't been handled yet: {}", filter);
-               return bookInfoDtos;
-        }
-    }
-
-    private static List<BookInfoDto> filterByRatingsCount(List<BookInfoDto> bookInfoDtos, BookInfoFilterDto filter) {
-        switch (filter.getFilterType()) {
-            case GREATER_OR_EQUAL_TO:
-                return bookInfoDtos
-                        .stream()
-                        .filter(bookInfo -> bookInfo.getRatingsCount() != null && Integer.valueOf(bookInfo.getRatingsCount()) >= Integer.valueOf(filter.getValue()))
-                        .collect(Collectors.toList());
-            default:
-                log.warn("The scenario for the following filter hasn't been handled yet: {}", filter);
-                return bookInfoDtos;
+                throw new IllegalArgumentException("Unsupported filter operator: " + filterOperator);
         }
     }
 }

@@ -1,5 +1,5 @@
 package com.artificery.BobShopBooksAPI.enums;
 
 public enum FilterField {
-    RATING, CATEGORIES, AUTHOR, RATINGS_COUNT
+    AVERAGE_RATING, CATEGORIES, AUTHORS, RATINGS_COUNT
 }
