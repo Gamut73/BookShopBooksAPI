@@ -45,10 +45,31 @@ public class BookInfoFilterUtil {
         Expression expression = expressionParser.parseExpression(getFieldNameFromFilterField(filter.getName()));
 
         EvaluationContext context = new StandardEvaluationContext(bookInfo);
-        String fieldValue = (String) expression.getValue(context);
+        Object fieldToEvaluate = expression.getValue(context);
 
-        Expression evaluationExpression = expressionParser.parseExpression(fieldValue + getOperator(filter.getOperator()) + filter.getValue());
-        return  (Boolean) evaluationExpression.getValue();
+        if (fieldToEvaluate == null) {
+            return false;
+        } else if (fieldToEvaluate instanceof List) {
+            return evaluateFilterForListField((List<String>) fieldToEvaluate, filter.getValue(), filter.getOperator());
+        } else {
+            Expression evaluationExpression = expressionParser.parseExpression((String) fieldToEvaluate + getOperator(filter.getOperator()) + filter.getValue());
+            return  (Boolean) evaluationExpression.getValue();
+        }
+    }
+
+    private static Boolean evaluateFilterForListField(List<String> values, String filterValue, FilterOperator operator) {
+        switch (operator) {
+            case LIST_CONTAINS:
+                return values.stream().anyMatch(value -> value.equalsIgnoreCase(filterValue));
+            case LIST_CONTAINS_PARTIAL:
+                return values.stream().anyMatch(value -> value.toLowerCase().contains(filterValue.toLowerCase()));
+            case LIST_NOT_CONTAINS:
+                return values.stream().anyMatch(value -> !value.equalsIgnoreCase(filterValue));
+            case LIST_NOT_CONTAINS_PARTIAL:
+                return values.stream().anyMatch(value -> !value.toLowerCase().contains(filterValue.toLowerCase()));
+            default:
+                throw new IllegalArgumentException(String.format("Filter Operator: %s is not supported for list filtering", operator.toString()));
+        }
     }
 
     private static String getFieldNameFromFilterField(FilterField filterField) {
