@@ -1,0 +1,1 @@
+This is a spring boot application that uses selenium to scrap bobshop.co.za  for books and some api calls later conveniently provides you with some useful information about the books being sold. Perfect for shopping 2nd hand books.
