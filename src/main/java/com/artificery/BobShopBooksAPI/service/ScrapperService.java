@@ -17,12 +17,10 @@ public class ScrapperService {
     private WebDriver webDriver;
 
     ScrapperService() {
-        System.setProperty("webdriver.chrome.driver", "src/main/resources/chromedriver_win32/chromedriver.exe");
+        System.setProperty("webdriver.chrome.driver", "chrome_driver/chromedriver.exe");
     }
 
     public List<BobStoreBookInfo> scrapBookTitlesFromSellerByCategory(String sellerId, List<String> categories) {
-        ChromeOptions chromeOptions = new ChromeOptions();
-        chromeOptions.setHeadless(true);
 
         webDriver = getChromeWebDriver();
         webDriver.get("https://www.bobshop.co.za/seller/" + sellerId);
@@ -111,8 +109,10 @@ public class ScrapperService {
 
     private WebDriver getChromeWebDriver() {
         ChromeOptions chromeOptions = new ChromeOptions();
-//        chromeOptions.setHeadless(true);
+
+        chromeOptions.addArguments("--headless=new");
         chromeOptions.addArguments("--remote-allow-origins=*");
+
         return new ChromeDriver(chromeOptions);
     }
 }

@@ -52,8 +52,18 @@ public class BookInfoFilterUtil {
         } else if (fieldToEvaluate instanceof List) {
             return evaluateFilterForListField((List<String>) fieldToEvaluate, filter.getValue(), filter.getOperator());
         } else {
-            Expression evaluationExpression = expressionParser.parseExpression((String) fieldToEvaluate + getOperator(filter.getOperator()) + filter.getValue());
-            return  (Boolean) evaluationExpression.getValue();
+            return evaluateFilterForStringField(filter, (String) fieldToEvaluate);
+        }
+    }
+
+    private static Boolean evaluateFilterForStringField(BookInfoFilterDto filter, String fieldToEvaluate) {
+        if (filter.getOperator() == FilterOperator.CONTAINS) {
+            return fieldToEvaluate.toLowerCase().contains(filter.getValue().toLowerCase());
+        } else if (filter.getOperator() == FilterOperator.NOT_CONTAINS) {
+            return !fieldToEvaluate.toLowerCase().contains(filter.getValue().toLowerCase());
+        } else {
+            Expression evaluationExpression = expressionParser.parseExpression(fieldToEvaluate + getOperator(filter.getOperator()) + filter.getValue());
+            return (Boolean) evaluationExpression.getValue();
         }
     }
 
